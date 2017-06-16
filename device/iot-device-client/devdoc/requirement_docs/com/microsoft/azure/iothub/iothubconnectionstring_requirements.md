@@ -65,7 +65,7 @@ public IotHubConnectionString(String hostName, String deviceId,
 **SRS_IOTHUB_CONNECTIONSTRING_21_023: [**The constructor shall save the device key as the value of `sharedAccessKey` in the connection string.**]**  
 **SRS_IOTHUB_CONNECTIONSTRING_21_024: [**The constructor shall save the shared access token as the value of `sharedAccessToken` in the connection string.**]**  
 **SRS_IOTHUB_CONNECTIONSTRING_21_025: [**If the parameters for the connection string is not valid, the constructor shall throw an IllegalArgumentException.**]**  
-**SRS_IOTHUB_CONNECTIONSTRING_34_036: [**If the SAS Token has expired, throw a SecurityException.**]**
+**SRS_IOTHUB_CONNECTIONSTRING_34_036: [**If the sharedAccessToken is not null but has expired**]**
 
 ### getHostName
 ```java

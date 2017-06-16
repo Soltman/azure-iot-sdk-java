@@ -258,7 +258,7 @@ public class IotHubSasTokenTest
         IotHubSasToken token = new IotHubSasToken(new DeviceClientConfig(iotHubConnectionString), 0);
     }
 
-    // Tests_SRS_IOTHUBSASTOKEN_34_009: [**The SAS Token shall be checked to see if it has expired and a SecurityException will be thrown if it is expired.**]**
+    // Tests_SRS_IOTHUBSASTOKEN_34_009: [**The SAS Token shall be checked to see if it has expired and a SecurityException shall be thrown if it is expired.**]**
     @Test (expected = SecurityException.class)
     public void expiredTokenCausesSecurityException(@Mocked final IotHubConnectionString mockIotHubConnectionString) throws SecurityException
     {
@@ -277,7 +277,7 @@ public class IotHubSasTokenTest
         new IotHubSasToken(new DeviceClientConfig(mockIotHubConnectionString), 0);
     }
 
-    // Tests_SRS_IOTHUBSASTOKEN_34_009: [**The SAS Token shall be checked to see if it has expired and a SecurityException will be thrown if it is expired.**]**
+    // Tests_SRS_IOTHUBSASTOKEN_34_009: [**The SAS Token shall be checked to see if it has expired and a SecurityException shall be thrown if it is expired.**]**
     @Test
     public void nonExpiredTokenDoesNotThrowSecurityException(@Mocked final IotHubConnectionString mockIotHubConnectionString)
     {

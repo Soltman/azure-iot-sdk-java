@@ -11,6 +11,7 @@ import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.Security;
 
 /**
  * Parser for the Iothub connection string.
@@ -38,16 +39,16 @@ public class IotHubConnectionString
     private String sharedAccessKey = null;
     private String sharedAccessToken = null;
     private CustomLogger logger = null;
-    
-    
+
     /**
      * CONSTRUCTOR.
      *
      * @param connectionString is the iothub connection string to parse.
      * @throws IllegalArgumentException if the provided connectionString is {@code null}, empty, or not valid.
      * @throws URISyntaxException if the hostName in the connection string is not a valid URI.
+     * @throws SecurityException if connectionString uses a SAS Token and that token has expired
      */
-    public IotHubConnectionString(String connectionString) throws URISyntaxException, IllegalArgumentException
+    public IotHubConnectionString(String connectionString) throws URISyntaxException, IllegalArgumentException, SecurityException
     {
         /* Codes_SRS_IOTHUB_CONNECTIONSTRING_21_016: [If the connection string is null or empty, the constructor shall throw an IllegalArgumentException.] */
         if ((connectionString == null) || connectionString.isEmpty())
@@ -114,10 +115,11 @@ public class IotHubConnectionString
      * @throws URISyntaxException if the IoT Hub hostname does not conform to RFC 3986.
      * @throws IllegalArgumentException if the IoT Hub hostname does not contain
      * a valid IoT Hub name as its prefix.
+     * @throws SecurityException if the sharedAccessToken is not null but has expired
      */
     public IotHubConnectionString(String hostName, String deviceId,
                                   String sharedAccessKey, String sharedAccessToken)
-            throws URISyntaxException, IllegalArgumentException
+            throws URISyntaxException, IllegalArgumentException, SecurityException
     {
         /* Codes_SRS_IOTHUB_CONNECTIONSTRING_21_025: [If the parameters for the connection string is not valid, the constructor shall throw an IllegalArgumentException.] */
         validateTerms(hostName, deviceId, sharedAccessKey, sharedAccessToken);

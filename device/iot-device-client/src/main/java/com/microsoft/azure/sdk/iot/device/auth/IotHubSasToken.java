@@ -68,11 +68,14 @@ public final class IotHubSasToken
      * @param config the device client config.
      * @param expiryTime the time, as a UNIX timestamp, after which the token
      * will become invalid.
+     * @throws IllegalArgumentException if the SAS Token format is incorrect
+     * @throws SecurityException if the SAS token saved in config has expired
      */
-    public IotHubSasToken(DeviceClientConfig config, long expiryTime)
+    public IotHubSasToken(DeviceClientConfig config, long expiryTime) throws IllegalArgumentException, SecurityException
     {
         // Codes_SRS_IOTHUBSASTOKEN_25_005: [**If device key is provided then the signature shall be correctly computed and set.**]**
-        if (config.getDeviceKey() != null) {
+        if (config.getDeviceKey() != null)
+        {
             // Tests_SRS_IOTHUBSASTOKEN_11_002: [**The constructor shall save all input parameters to member variables.**]
             this.scope = IotHubUri.getResourceUri(config.getIotHubHostname(), config.getDeviceId());
             this.expiryTime = expiryTime;
@@ -88,12 +91,15 @@ public final class IotHubSasToken
 
             // Codes_SRS_IOTHUBSASTOKEN_25_008: [**The required format for the SAS Token shall be verified and IllegalArgumentException is thrown if unmatched.**]**
             if (!isSasFormat())
+            {
                 throw new IllegalArgumentException("SasToken format is invalid");
+            }
 
             // Codes_SRS_IOTHUBSASTOKEN_34_009: [**The SAS Token shall be verified as not expired and SecurityException will be thrown if it is expired.**]**
             if (isSasTokenExpired())
+            {
                 throw new SecurityException("Your SasToken has expired");
-
+            }
         }
         else
         {
@@ -114,9 +120,13 @@ public final class IotHubSasToken
         if (this.sasToken != null)
         {
             if(isSasFormat())
+            {
                 return this.sasToken;
+            }
             else
+            {
                 throw new IllegalArgumentException("SasToken format is invalid");
+            }
         }
         else if(this.signature != null && this.expiryTime != 0L && this.scope!= null)
         {
@@ -124,7 +134,9 @@ public final class IotHubSasToken
             return buildSasToken();
         }
         else
+        {
             return null;
+        }
     }
     private boolean isSasFormat()
     {
@@ -141,7 +153,9 @@ public final class IotHubSasToken
                 if(fieldValues.containsKey(ExpiryTimeFieldKey)
                         && fieldValues.containsKey(SignatureFieldKey)
                         && fieldValues.containsKey(ResourceURIFieldKey))
+                {
                     return true;
+                }
             }
         }
         return false;
@@ -168,13 +182,19 @@ public final class IotHubSasToken
         return (System.currentTimeMillis() / 1000) >= this.expiryTime ;
     }
 
+    /**
+     * Gets the expiry time from the provided sasToken
+     * @param sasToken the shared access signature token to get the expiry time from
+     * @return the expiry time (in seconds) of the sasToken
+     */
     public static Long getExpiryTimeFromToken(String sasToken)
     {
         Map<String, String> fieldValues = extractFieldValues(sasToken);
         return Long.parseLong(fieldValues.get(ExpiryTimeFieldKey));
     }
 
-    private static Map<String, String> extractFieldValues(String sharedAccessSignature)
+
+    private static Map<String, String> extractFieldValues(String sharedAccessSignature) throws IllegalArgumentException
     {
         String[] lines = sharedAccessSignature.split(SASTokenSegmentSeparator);
 

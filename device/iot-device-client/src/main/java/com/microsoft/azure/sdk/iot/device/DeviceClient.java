@@ -16,6 +16,7 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.Security;
 import java.util.Map;
 import java.util.Set;
 
@@ -127,9 +128,10 @@ public final class DeviceClient implements Closeable
      * {@code SharedAccessKey}.
      * @throws URISyntaxException if the IoT hub hostname does not conform to
      * RFC 3986.
+     * @throws SecurityException if the connString uses a SAS Token and that token has expired
      */
     public DeviceClient(String connString, IotHubClientProtocol protocol)
-            throws URISyntaxException
+            throws URISyntaxException, SecurityException
     {
         /* Codes_SRS_DEVICECLIENT_21_004: [If the connection string is null or empty, the function shall throw an IllegalArgumentException.] */
         if ((connString == null) || connString.isEmpty())
@@ -150,8 +152,9 @@ public final class DeviceClient implements Closeable
         this.config = new DeviceClientConfig(iotHubConnectionString);
 
         /* Codes_SRS_DEVICECLIENT_34_046: [**If The provided connection string contains an expired SAS token, throw a SecurityException.**] */
-        if (this.config.getSharedAccessToken() != null && IotHubSasToken.isSasTokenExpired(this.config.getSharedAccessToken()))
+        if (this.config.getSharedAccessToken() != null && IotHubSasToken.isSasTokenExpired(this.config.getSharedAccessToken())) {
             throw new SecurityException("Your SasToken is expired");
+        }
 
         switch (protocol)
         {
@@ -186,12 +189,14 @@ public final class DeviceClient implements Closeable
      *
      * @throws IOException if a connection to an IoT Hub is cannot be
      * established.
+     * @throws SecurityException if the connString uses a SAS Token and that token has expired
      */
-    public void open() throws IOException
+    public void open() throws IOException, SecurityException
     {
         /* Codes_SRS_DEVICECLIENT_34_044: [If the SAS token has expired before this call, throw a Security Exception] */
-        if (this.config.getSharedAccessToken() != null && IotHubSasToken.isSasTokenExpired(this.config.getSharedAccessToken()))
+        if (this.config.getSharedAccessToken() != null && IotHubSasToken.isSasTokenExpired(this.config.getSharedAccessToken())) {
             throw new SecurityException("Your SasToken is expired");
+        }
 
         /* Codes_SRS_DEVICECLIENT_21_006: [The open shall open the deviceIO connection.] */
         /* Codes_SRS_DEVICECLIENT_21_007: [If the opening a connection via deviceIO is not successful, the open shall throw IOException.] */
@@ -270,7 +275,6 @@ public final class DeviceClient implements Closeable
             IotHubEventCallback callback,
             Object callbackContext)
     {
-        /* Codes_SRS_DEVICECLIENT_21_010: [The sendEventAsync shall asynchronously send the message using the deviceIO connection.] */
         /* Codes_SRS_DEVICECLIENT_21_011: [If starting to send via deviceIO is not successful, the sendEventAsync shall bypass the threw exception.] */
         deviceIO.sendEventAsync(message, callback, callbackContext);
 

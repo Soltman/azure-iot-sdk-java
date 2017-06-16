@@ -101,8 +101,6 @@ public void sendEventAsync(Message msg, IotHubEventCallback callback, Object cal
 
 **SRS_DEVICECLIENT_21_011: [**If starting to send via deviceIO is not successful, the sendEventAsync shall bypass the threw exception.**]**  
 
-**SRS_DEVICECLIENT_34_045: [**If the SAS token has expired before this call, throw a Security Exception**]**
-
 
 ### setMessageCallback
 

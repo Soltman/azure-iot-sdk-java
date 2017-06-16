@@ -573,9 +573,7 @@ public class DeviceClientTest
         client.setMessageCallback(null, context);
     }
 
-    /*
-    **Tests_SRS_DEVICECLIENT_25_025: [**The function shall create a new instance of class Device Twin and request all twin properties by calling getDeviceTwin**]**
-     */
+    //Tests_SRS_DEVICECLIENT_25_025: [The function shall create a new instance of class Device Twin and request all twin properties by calling getDeviceTwin]
     @Test
     public void startDeviceTwinSucceeds(@Mocked final DeviceTwin mockedDeviceTwin,
                                         @Mocked final IotHubEventCallback mockedStatusCB,
@@ -1781,7 +1779,9 @@ public class DeviceClientTest
     {
         //This token will always be expired
         final Long expiryTime = 0L;
-        final String expiredConnString = "HostName=iothub.device.com;DeviceId=2;SharedAccessSignature=SharedAccessSignature sr=hub.azure-devices.net%2Fdevices%2F2&sig=3V1oYPdtyhGPHDDpjS2SnwxoU7CbI%2BYxpLjsecfrtgY%3D&se=" + expiryTime;
+        final String expiredConnString = "HostName=iothub.device.com;CredentialType=SharedAccessKey;DeviceId=testdevice;"
+                + "SharedAccessSignature=SharedAccessSignature sr=sample-iothub-hostname.net%2fdevices%2fsample-device-ID&sig=S3%2flPidfBF48B7%2fOFAxMOYH8rpOneq68nu61D%2fBP6fo%3d&se=" + expiryTime;
+
         final IotHubClientProtocol protocol = IotHubClientProtocol.AMQPS;
 
         new NonStrictExpectations()
@@ -1799,12 +1799,14 @@ public class DeviceClientTest
         DeviceClient client = new DeviceClient(expiredConnString, protocol);
     }
 
-    //Tests_SRS_DEVICECLIENT_34_044: [**If the SAS token has expired before this call, throw a Security Exception**]
+    //Tests_SRS_DEVICECLIENT_34_044: [If the SAS token has expired before this call, throw a Security Exception]
     @Test (expected = SecurityException.class)
     public void tokenExpiresAfterDeviceClientInitializedBeforeOpen() throws SecurityException, URISyntaxException, IOException
     {
         final Long expiryTime = Long.MAX_VALUE;
-        final String connString = "HostName=iothub.device.com;DeviceId=2;SharedAccessSignature=SharedAccessSignature sr=hub.azure-devices.net%2Fdevices%2F2&sig=3V1oYPdtyhGPHDDpjS2SnwxoU7CbI%2BYxpLjsecfrtgY%3D&se=" + expiryTime;
+        final String connString = "HostName=iothub.device.com;CredentialType=SharedAccessKey;DeviceId=testdevice;"
+                + "SharedAccessSignature=SharedAccessSignature sr=sample-iothub-hostname.net%2fdevices%2fsample-device-ID&sig=S3%2flPidfBF48B7%2fOFAxMOYH8rpOneq68nu61D%2fBP6fo%3d&se=" + expiryTime;
+
         final IotHubClientProtocol protocol = IotHubClientProtocol.AMQPS;
 
         DeviceClient client = new DeviceClient(connString, protocol);
@@ -1822,7 +1824,6 @@ public class DeviceClientTest
 
         // act
         client.open();
-        //client.sendEventAsync(new Message("hello world"), null, null);
     }
 
     /* Tests_SRS_DEVICECLIENT_21_044: [The uploadToBlobAsync shall asynchronously upload the stream in `inputStream` to the blob in `destinationBlobName`.] */
@@ -1839,6 +1840,7 @@ public class DeviceClientTest
         // arrange
         final String connString = "HostName=iothub.device.com;CredentialType=SharedAccessKey;DeviceId=testdevice;"
                 + "SharedAccessKey=adjkl234j52=";
+
         final IotHubClientProtocol protocol = IotHubClientProtocol.AMQPS;
         final String destinationBlobName = "valid/blob/name.txt";
         final long streamLength = 100;
