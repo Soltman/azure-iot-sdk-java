@@ -219,8 +219,15 @@ public final class HttpsTransport implements IotHubTransport
         // Codes_SRS_HTTPSTRANSPORT_11_005: [The function shall configure a valid HTTPS request and send it to the IoT Hub.]
         // Codes_SRS_HTTPSTRANSPORT_11_014: [If the send request fails while in progress, the function shall throw an IOException.]
         // Codes_SRS_HTTPSTRANSPORT_11_017: [If an invalid URI is generated from the configuration given in the constructor, the function shall throw a URISyntaxException.]
-        ResponseMessage responseMessage = this.connection.sendEvent(msg);
-
+        ResponseMessage responseMessage;
+        try
+        {
+            responseMessage = this.connection.sendEvent(msg);
+        }
+        catch (SecurityException e)
+        {
+            responseMessage = new ResponseMessage(e.getMessage().getBytes(), IotHubStatusCode.UNAUTHORIZED);
+        }
         // Codes_SRS_HTTPSTRANSPORT_11_006: [The function shall add a packet containing the callbacks, contexts, and response for all sent messages to the callback queue.]
         this.moveInProgressListToCallbackList(responseMessage);
     }
