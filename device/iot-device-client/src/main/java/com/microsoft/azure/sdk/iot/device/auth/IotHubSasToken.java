@@ -91,7 +91,7 @@ public final class IotHubSasToken
                 throw new IllegalArgumentException("SasToken format is invalid");
 
             // Codes_SRS_IOTHUBSASTOKEN_34_009: [**The SAS Token shall be verified as not expired and SecurityException will be thrown if it is expired.**]**
-            if (isSasTokenExpired(this.sasToken))
+            if (isSasTokenExpired())
                 throw new SecurityException("Your SasToken has expired");
 
         }
