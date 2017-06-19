@@ -16,10 +16,6 @@ public class MqttMessaging extends Mqtt
     private String publishTopic;
     private String parseTopic;
 
-    private static final char PROPERTY_SEPARATOR = '&';
-    private static final char PAIR_SEPARATOR = '=';
-    private static final String DEVICE_ID_TAG = "$.mid";
-
     @Override
     String parseTopic() throws IOException
     {
@@ -183,13 +179,13 @@ public class MqttMessaging extends Mqtt
             {
                 if(needAmpersand)
                 {
-                    stringBuilder.append(PROPERTY_SEPARATOR);
+                    stringBuilder.append(Mqtt.MESSAGE_PROPERTY_SEPARATOR);
                 }
                 /*
                 **Codes_SRS_MqttMessaging_25_026: [**send method shall append the message properties to publishTopic before publishing.**]**
                  */
                 stringBuilder.append(property.getName());
-                stringBuilder.append(PAIR_SEPARATOR);
+                stringBuilder.append(MESSAGE_PROPERTY_KEY_VALUE_SEPARATOR);
                 stringBuilder.append(property.getValue());
                 needAmpersand = true;
             }
@@ -198,9 +194,9 @@ public class MqttMessaging extends Mqtt
              */
             if(message.getMessageId() != null)
             {
-                stringBuilder.append(PROPERTY_SEPARATOR);
-                stringBuilder.append(DEVICE_ID_TAG);
-                stringBuilder.append(PAIR_SEPARATOR);
+                stringBuilder.append(Mqtt.MESSAGE_PROPERTY_SEPARATOR);
+                stringBuilder.append(MESSAGE_ID);
+                stringBuilder.append(MESSAGE_PROPERTY_KEY_VALUE_SEPARATOR);
                 stringBuilder.append(message.getMessageId());
             }
             messagePublishTopic = stringBuilder.toString();
@@ -209,11 +205,10 @@ public class MqttMessaging extends Mqtt
         {
             messagePublishTopic = this.publishTopic;
         }
+
         /*
         **Codes_SRS_MqttMessaging_25_024: [**send method shall publish a message to the IOT Hub on the publish topic by calling method publish().**]**
          */
         this.publish(messagePublishTopic, message.getBytes());
-
     }
-
 }

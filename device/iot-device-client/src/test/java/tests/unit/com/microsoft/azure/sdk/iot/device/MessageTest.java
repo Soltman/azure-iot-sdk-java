@@ -16,7 +16,10 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
 
-/** Unit tests for Message. */
+/**
+ * Unit test for Message class.
+ * 88% methods, 91% lines covered
+ */
 public class MessageTest
 {
     protected static Charset UTF8 = StandardCharsets.UTF_8;

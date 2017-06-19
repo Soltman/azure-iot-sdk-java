@@ -115,6 +115,8 @@ public class Message
      */
     private ArrayList<MessageProperty> properties;
 
+    private String deliveryAcknowledgement;
+
     /// <summary>
     /// The message body
     /// </summary>
@@ -131,8 +133,9 @@ public class Message
     /**
      * Constructor.
      */
-    public Message() {
-         initialize();
+    public Message()
+    {
+        initialize();
     }
 
     /**
@@ -148,9 +151,11 @@ public class Message
      * Constructor.
      * @param body The body of the new Message instance.
      */
-    public Message(byte[] body) {
+    public Message(byte[] body)
+    {
         // Codes_SRS_MESSAGE_11_025: [If the message body is null, the constructor shall throw an IllegalArgumentException.]
-        if (body == null) {
+        if (body == null)
+        {
             throw new IllegalArgumentException("Message body cannot be 'null'.");
         }
 
@@ -164,8 +169,10 @@ public class Message
      * Constructor.
      * @param body The body of the new Message instance. It is internally serialized to a byte array using UTF-8 encoding.
      */
-    public Message(String body) {
-        if (body == null) {
+    public Message(String body)
+    {
+        if (body == null)
+        {
             throw new IllegalArgumentException("Message body cannot be 'null'.");
         }
 
@@ -174,13 +181,14 @@ public class Message
         this.body = body.getBytes(DEFAULT_IOTHUB_MESSAGE_CHARSET);
     }
 
-
+    
     // ----- Public Methods -----
 
     /// <summary>
     /// The stream content of the body.
     /// </summary>
-    public ByteArrayOutputStream getBodyStream() {
+    public ByteArrayOutputStream getBodyStream()
+    {
         return null;
     }
 
@@ -205,12 +213,14 @@ public class Message
      * @param name Name of the user-defined property to search for.
      * @return The value of the property if it is set, or null otherwise.
      */
-    public String getProperty(String name) {
-
+    public String getProperty(String name)
+    {
         MessageProperty messageProperty = null;
 
-        for (MessageProperty currentMessageProperty: this.properties) {
-            if (currentMessageProperty.hasSameName(name)) {
+        for (MessageProperty currentMessageProperty: this.properties)
+        {
+            if (currentMessageProperty.hasSameName(name))
+            {
                 messageProperty = currentMessageProperty;
                 break;
             }
@@ -231,28 +241,34 @@ public class Message
      * @param value Value of the property to be set.
      * @exception IllegalArgumentException If any of the arguments provided is null.
      */
-    public void setProperty(String name, String value) {
+    public void setProperty(String name, String value)
+    {
         // Codes_SRS_MESSAGE_11_028: [If name is null, the function shall throw an IllegalArgumentException.]
-        if (name == null) {
+        if (name == null)
+        {
             throw new IllegalArgumentException("Property name cannot be 'null'.");
         }
 
         // Codes_SRS_MESSAGE_11_029: [If value is null, the function shall throw an IllegalArgumentException.]
-        if (value == null) {
+        if (value == null)
+        {
             throw new IllegalArgumentException("Property value cannot be 'null'.");
         }
 
         // Codes_SRS_MESSAGE_11_026: [The function shall set the message property to the given value.]
         MessageProperty messageProperty = null;
 
-        for (MessageProperty currentMessageProperty: this.properties) {
-            if (currentMessageProperty.hasSameName(name)) {
+        for (MessageProperty currentMessageProperty: this.properties)
+        {
+            if (currentMessageProperty.hasSameName(name))
+            {
                 messageProperty = currentMessageProperty;
                 break;
             }
         }
 
-        if (messageProperty != null) {
+        if (messageProperty != null)
+        {
             this.properties.remove(messageProperty);
         }
 
@@ -379,5 +395,59 @@ public class Message
     public void setMessageType(MessageType type)
     {
         this.messageType = type;
+    }
+
+    /**
+     * Getter for the To system property
+     * @return the To value
+     */
+    public String getTo()
+    {
+        return this.to;
+    }
+
+    /**
+     * Setter for the To system property
+     * @param to the value to set To as
+     */
+    public void setTo(String to)
+    {
+        this.to = to;
+    }
+
+    /**
+     * Getter for the delivery acknowledgement system property
+     * @return the delivery acknowledgement value
+     */
+    public String getDeliveryAcknowledgement()
+    {
+        return this.deliveryAcknowledgement;
+    }
+
+    /**
+     * Setter for the Delivery Acknowledgement system property
+     * @param deliveryAcknowledgement the value to set delivery acknowledgement as
+     */
+    public void setDeliveryAcknowledgement(String deliveryAcknowledgement)
+    {
+        this.deliveryAcknowledgement = deliveryAcknowledgement;
+    }
+
+    /**
+     * Getter for the User ID system property
+     * @return the User ID value
+     */
+    public String getUserId ()
+    {
+        return this.userId;
+    }
+
+    /**
+     * Setter for the To system property
+     * @param userId the value to set user id as
+     */
+    public void setUserId(String userId)
+    {
+        this.userId = userId;
     }
 }
