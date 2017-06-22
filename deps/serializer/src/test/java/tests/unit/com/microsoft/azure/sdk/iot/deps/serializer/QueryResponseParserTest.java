@@ -5,34 +5,37 @@
 
 package tests.unit.com.microsoft.azure.sdk.iot.deps.serializer;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import com.microsoft.azure.sdk.iot.deps.serializer.QueryResponseParser;
 import com.microsoft.azure.sdk.iot.deps.serializer.TwinParser;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /*
     Unit tests for QueryResponseParser
-    Coverage result : method - 83%, line - 89%
+    Coverage result : method - 81%, line - 87%
  */
 public class QueryResponseParserTest
 {
-    private static final String [] VALID_TYPE = {"unknown", "twin", "deviceJob", "jobResponse", "raw" };
-    private static final String INVALID_TYPE = "invalid";
+    private static final QueryResponseParser.TYPE[] VALID_TYPE = { QueryResponseParser.TYPE.UNKNOWN, QueryResponseParser.TYPE.TWIN,
+                                                                    QueryResponseParser.TYPE.DEVICE_JOB, QueryResponseParser.TYPE.JOB_RESPONSE,
+                                                                    QueryResponseParser.TYPE.RAW, QueryResponseParser.TYPE.JSON};
     private static final String VALID_JSON = "{" +
                                              "\"deviceId\":\"devA\"" +
                                                 "}";
     private static final String INVALID_JSON = "{\u1234}";
-    private static final String MALFORMED_JSON = "{abc : abc}";
+    private static final String MALFORMED_JSON = "abc : abc}";
     private static final String VALID_JSON_ARRAY_1 = "[" + VALID_JSON + "]";
     private static final String VALID_JSON_ARRAY_2 = "[" + VALID_JSON + "," + VALID_JSON + "]";
-    private static final String VALID_CONTINUATION_TOKEN = UUID.randomUUID().toString();
-    private static final String INVALID_CONTINUATION_TOKEN = "\u1234";
     private static final String VALID_TWIN_JSON = "{\n" +
             "\t\t\"deviceId\": \"devA\",\n" +
             "\t\t\"generationId\": \"123\",\n" +
@@ -72,51 +75,74 @@ public class QueryResponseParserTest
     private static final String VALID_TWIN_JSON_ARRAY_2 = "[" + VALID_TWIN_JSON + ","
                                                             + VALID_TWIN_JSON + "]";
 
-    private static String buildJsonInput(String type, String itemsArray, String token)
+    private static Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+
+    private static String buildJsonInputArrayFromJson(String itemsArray)
     {
-        return "{\n" +
-                "    \"type\": \"" + type + "\",\n" +
-                "    \"items\": " + itemsArray + ",\n" +
-                "    \"continuationToken\": \"" + token + "\"\n" +
-                "}";
+        return "[" + itemsArray + "]";
+    }
+
+    private static List<?> buildListFromJsonArray(String jsonArrayString)
+    {
+        JsonObject[] jsonItems = gson.fromJson(jsonArrayString, JsonObject[].class);
+        List<String> list = new LinkedList<>();
+
+        for(JsonObject json : jsonItems)
+        {
+            list.add(gson.toJson(json));
+        }
+        return list;
+    }
+
+    private static void assertListEquals(List expected, List test)
+    {
+        assertTrue(expected.size() == test.size());
+        for(Object o : expected)
+        {
+            assertTrue(test.contains(o));
+        }
     }
 
     //Tests_SRS_QUERY_RESPONSE_PARSER_25_001: [The constructor shall create an instance of the QueryResponseParser.]
-    //Tests_SRS_QUERY_RESPONSE_PARSER_25_002: [The constructor shall parse the provided json and initialize type, continuationToken and jsonItems using the information in the json.]
+    //Tests_SRS_QUERY_RESPONSE_PARSER_25_002: [**The constructor shall save the type provided.**]**
     @Test
     public void constructorSucceeds() throws IllegalArgumentException
     {
         for (int i = 1; i < VALID_TYPE.length; i++)
         {
-            //arrange
-            final String testJson = buildJsonInput(VALID_TYPE[i], VALID_JSON_ARRAY_1, VALID_CONTINUATION_TOKEN);
-
             //act
-            QueryResponseParser testParser = new QueryResponseParser(testJson);
+            QueryResponseParser testParser = new QueryResponseParser(VALID_JSON_ARRAY_1, VALID_TYPE[i]);
 
             //assert
-            assertEquals(VALID_TYPE[i], testParser.getType());
-            assertEquals(VALID_JSON_ARRAY_1, testParser.getJsonItemsArray());
-            assertEquals(VALID_CONTINUATION_TOKEN, testParser.getContinuationToken());
+            assertTrue(testParser.getType().equalsIgnoreCase(VALID_TYPE[i].getValue()));
+            assertListEquals(buildListFromJsonArray(VALID_JSON_ARRAY_1), testParser.getJsonItems());
         }
     }
 
     //Tests_SRS_QUERY_RESPONSE_PARSER_25_003: [If the provided json is null, empty, or not valid, the constructor shall throws IllegalArgumentException.]
-    @Test (expected = IllegalArgumentException.class)
-    public void constructorThrowsOnInvalidJson() throws IllegalArgumentException
+    @Test
+    public void constructorThrowsOnMalformedJson() throws IllegalArgumentException
     {
-        for(int i = 0; i < VALID_TYPE.length; i++)
+        for (int i = 0; i < VALID_TYPE.length; i++)
         {
-            //arrange
-            final String testJson = buildJsonInput(VALID_TYPE[i], MALFORMED_JSON, VALID_CONTINUATION_TOKEN);
+            boolean ex = false;
+            try
+            {
+                //arrange
+                final String testJson = buildJsonInputArrayFromJson(MALFORMED_JSON);
 
-            //act
-            QueryResponseParser testParser = new QueryResponseParser(testJson);
+                //act
+                QueryResponseParser testParser = new QueryResponseParser(testJson, VALID_TYPE[i]);
 
-            //assert
-            assertEquals(VALID_TYPE[i], testParser.getType());
-            assertEquals(VALID_JSON_ARRAY_1, testParser.getJsonItemsArray());
-            assertEquals(VALID_CONTINUATION_TOKEN, testParser.getContinuationToken());
+                //assert
+                assertTrue(testParser.getType().equalsIgnoreCase(VALID_TYPE[i].getValue()));
+                assertListEquals(buildListFromJsonArray(testJson), testParser.getJsonItems());
+            }
+            catch (IllegalArgumentException e)
+            {
+                ex = true;
+            }
+            assertTrue("Did not fail for type " + VALID_TYPE[i], ex);
         }
     }
 
@@ -124,51 +150,20 @@ public class QueryResponseParserTest
     public void constructorThrowsOnInvalidUTF8Json() throws IllegalArgumentException
     {
         //arrange
-        final String testJson = buildJsonInput(VALID_TYPE[0], INVALID_JSON, VALID_CONTINUATION_TOKEN);
-
+        final String testJson = buildJsonInputArrayFromJson(INVALID_JSON);
         //act
-        QueryResponseParser testParser = new QueryResponseParser(testJson);
+        QueryResponseParser testParser = new QueryResponseParser(testJson, VALID_TYPE[1]);
     }
 
-    //Tests_SRS_QUERY_RESPONSE_PARSER_25_005: [If the provided json do not contains one of the keys type, continuationToken and jsonItems, the constructor shall throws IllegalArgumentException.]
+    //Tests_SRS_QUERY_RESPONSE_PARSER_25_005: [**If the provided `type` is `UNKNOWN` the constructor shall throws IllegalArgumentException.**]**
     @Test (expected = IllegalArgumentException.class)
     public void constructorThrowsOnInvalidType() throws IllegalArgumentException
     {
         //arrange
-        final String testJson = buildJsonInput(INVALID_TYPE, VALID_JSON_ARRAY_1, VALID_CONTINUATION_TOKEN);
+        final String testJson =  VALID_JSON_ARRAY_1;
 
         //act
-        QueryResponseParser testParser = new QueryResponseParser(testJson);
-    }
-
-    //Tests_SRS_QUERY_RESPONSE_PARSER_25_006: [If the provided json is of type other than twin, raw, deviceJob or jobResponse, the constructor shall throws IllegalArgumentException.]
-    @Test (expected = IllegalArgumentException.class)
-    public void constructorThrowsOnUnknownType() throws IllegalArgumentException
-    {
-        //arrange
-        final String testJson = buildJsonInput(VALID_TYPE[0], VALID_JSON_ARRAY_1, VALID_CONTINUATION_TOKEN);
-
-        //act
-        QueryResponseParser testParser = new QueryResponseParser(testJson);
-    }
-    @Test (expected = IllegalArgumentException.class)
-    public void constructorThrowsOnInvalidUTF8JsonToken() throws IllegalArgumentException
-    {
-        //arrange
-        final String testJson = buildJsonInput(VALID_TYPE[0], VALID_JSON_ARRAY_1, INVALID_CONTINUATION_TOKEN);
-
-        //act
-        QueryResponseParser testParser = new QueryResponseParser(testJson);
-    }
-
-    @Test (expected = IllegalArgumentException.class)
-    public void constructorThrowsOnInvalidUTF8JsonItems() throws IllegalArgumentException
-    {
-        //arrange
-        final String testJson = buildJsonInput(VALID_TYPE[0], INVALID_JSON, VALID_CONTINUATION_TOKEN);
-
-        //act
-        QueryResponseParser testParser = new QueryResponseParser(testJson);
+        QueryResponseParser testParser = new QueryResponseParser(testJson, VALID_TYPE[0]);
     }
 
     //Tests_SRS_QUERY_RESPONSE_PARSER_25_007: [The getType shall return the string stored in type enum.]
@@ -178,45 +173,26 @@ public class QueryResponseParserTest
         for (int i = 1; i < VALID_TYPE.length; i++)
         {
             //arrange
-            final String testJson = buildJsonInput(VALID_TYPE[i], VALID_JSON_ARRAY_1, VALID_CONTINUATION_TOKEN);
-            QueryResponseParser testParser = new QueryResponseParser(testJson);
+            final String testJson = VALID_JSON_ARRAY_1;
+            QueryResponseParser testParser = new QueryResponseParser(testJson, VALID_TYPE[i]);
 
             //act
             String actualType = testParser.getType();
 
             //assert
-            assertEquals(VALID_TYPE[i], actualType);
+            assertTrue(VALID_TYPE[i].getValue().equalsIgnoreCase(actualType));
         }
     }
 
-    //Tests_SRS_QUERY_RESPONSE_PARSER_25_008: [The getJsonItemsArray shall return the array of json items as string .]
+    //Tests_SRS_QUERY_RESPONSE_PARSER_25_008: [The getJsonItems shall return the list of json items as strings .]
     @Test
     public void getJsonItemsGets() throws IllegalArgumentException
     {
-        //arrange
-        final String testJson = buildJsonInput(VALID_TYPE[1], VALID_JSON_ARRAY_1, VALID_CONTINUATION_TOKEN);
-        QueryResponseParser testParser = new QueryResponseParser(testJson);
-
         //act
-        String actualItems = testParser.getJsonItemsArray();
+        QueryResponseParser testParser = new QueryResponseParser(VALID_JSON_ARRAY_1, VALID_TYPE[1]);
 
         //assert
-        assertEquals(VALID_JSON_ARRAY_1, actualItems);
-    }
-
-    //Tests_SRS_QUERY_RESPONSE_PARSER_25_009: [The getContinuationToken shall return the string stored in continuationToken.]
-    @Test
-    public void getContinuationTokenGets() throws IllegalArgumentException
-    {
-        //arrange
-        final String testJson = buildJsonInput(VALID_TYPE[1], VALID_JSON_ARRAY_1, VALID_CONTINUATION_TOKEN);
-        QueryResponseParser testParser = new QueryResponseParser(testJson);
-
-        //act
-        String actualItems = testParser.getContinuationToken();
-
-        //assert
-        assertEquals(VALID_CONTINUATION_TOKEN, actualItems);
+        assertListEquals(buildListFromJsonArray(VALID_JSON_ARRAY_1), testParser.getJsonItems());
     }
 
     //Tests_SRS_QUERY_RESPONSE_PARSER_25_010: [The getTwins shall return the collection of twin parsers as retrieved and parsed from json.]
@@ -224,11 +200,11 @@ public class QueryResponseParserTest
     public void getTwinGets() throws IllegalArgumentException, IOException
     {
         //arrange
-        final String testJson = buildJsonInput(VALID_TYPE[1], VALID_TWIN_JSON_ARRAY_1, VALID_CONTINUATION_TOKEN);
+        final String testJson =  VALID_TWIN_JSON_ARRAY_1;
         final TwinParser testTwin = new TwinParser();
         testTwin.enableTags();
         testTwin.updateTwin(VALID_TWIN_JSON);
-        QueryResponseParser testParser = new QueryResponseParser(testJson);
+        QueryResponseParser testParser = new QueryResponseParser(testJson, VALID_TYPE[1]);
 
         //act
         List<TwinParser> actualTwins = testParser.getTwins();
@@ -252,11 +228,11 @@ public class QueryResponseParserTest
     public void getTwinArrayGets() throws IllegalArgumentException, IOException
     {
         //arrange
-        final String testJson = buildJsonInput(VALID_TYPE[1], VALID_TWIN_JSON_ARRAY_2, VALID_CONTINUATION_TOKEN);
+        final String testJson = VALID_TWIN_JSON_ARRAY_2;
         final TwinParser testTwin = new TwinParser();
         testTwin.enableTags();
         testTwin.updateTwin(VALID_TWIN_JSON);
-        QueryResponseParser testParser = new QueryResponseParser(testJson);
+        QueryResponseParser testParser = new QueryResponseParser(testJson, VALID_TYPE[1]);
 
         //act
         List<TwinParser> actualTwins = testParser.getTwins();
@@ -296,9 +272,9 @@ public class QueryResponseParserTest
     public void getTwinThrowsIfNotTwin() throws IllegalArgumentException
     {
         //arrange
-        final String testJson = buildJsonInput(VALID_TYPE[2], VALID_TWIN_JSON_ARRAY_1, VALID_CONTINUATION_TOKEN);
+        final String testJson = VALID_TWIN_JSON_ARRAY_1;
 
-        QueryResponseParser testParser = new QueryResponseParser(testJson);
+        QueryResponseParser testParser = new QueryResponseParser(testJson, VALID_TYPE[2]);
 
         //act
         List<TwinParser> actualTwins = testParser.getTwins();
@@ -309,8 +285,8 @@ public class QueryResponseParserTest
     public void getRawDataGets() throws IllegalArgumentException
     {
         //arrange
-        final String testJson = buildJsonInput(VALID_TYPE[4], VALID_JSON_ARRAY_2, VALID_CONTINUATION_TOKEN);
-        QueryResponseParser testParser = new QueryResponseParser(testJson);
+        final String testJson = VALID_JSON_ARRAY_2;
+        QueryResponseParser testParser = new QueryResponseParser(testJson, VALID_TYPE[4]);
 
         //act
         List<String> actualRaws = testParser.getRawData();
@@ -325,17 +301,16 @@ public class QueryResponseParserTest
     public void getRawDataThrowsIfNotRaw() throws IllegalArgumentException
     {
         //arrange
-        final String testJson = buildJsonInput(VALID_TYPE[1], VALID_JSON_ARRAY_2, VALID_CONTINUATION_TOKEN);
+        final String testJson = VALID_JSON_ARRAY_2;
 
-        QueryResponseParser testParser = new QueryResponseParser(testJson);
+        QueryResponseParser testParser = new QueryResponseParser(testJson, VALID_TYPE[1]);
 
         //act
         List<String> actualRaws = testParser.getRawData();
     }
 
-    /*
-    *  Waiting for Jobs and device jobs parser to enable these tests
-    */
+    /* Waiting for Jobs and device jobs parser to enable these tests */
+
     //Tests_SRS_QUERY_RESPONSE_PARSER_25_013: [The getDeviceJobs shall return the collection of device jobs parsers as retrieved and parsed from json.]
     @Ignore
     @Test
