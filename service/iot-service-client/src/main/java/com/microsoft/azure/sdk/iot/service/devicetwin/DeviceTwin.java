@@ -5,6 +5,7 @@
 
 package com.microsoft.azure.sdk.iot.service.devicetwin;
 
+import com.microsoft.azure.sdk.iot.deps.serializer.TwinParser;
 import com.microsoft.azure.sdk.iot.service.IotHubConnectionString;
 import com.microsoft.azure.sdk.iot.service.IotHubConnectionStringBuilder;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
@@ -15,12 +16,15 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-
+import java.util.NoSuchElementException;
 
 public class DeviceTwin
 {
     private IotHubConnectionString iotHubConnectionString = null;
     private Integer requestId = 0;
+    private final long USE_DEFAULT_TIMEOUT = 0;
+    private final int DEFAULT_PAGE_SIZE = 100;
+
 
     /**
      * Static constructor to create instance from connection string
@@ -85,7 +89,7 @@ public class DeviceTwin
          **Codes_SRS_DEVICETWIN_25_009: [** The function shall send the created request and get the response **]**
          **Codes_SRS_DEVICETWIN_25_010: [** The function shall verify the response status and throw proper Exception **]**
          */
-        HttpResponse response = DeviceOperations.request(this.iotHubConnectionString, url, HttpMethod.GET, new byte[0], String.valueOf(requestId++), 0);
+        HttpResponse response = DeviceOperations.request(this.iotHubConnectionString, url, HttpMethod.GET, new byte[0], String.valueOf(requestId++), USE_DEFAULT_TIMEOUT);
         String twin = new String(response.getBody(), StandardCharsets.UTF_8);
 
         /*
@@ -358,4 +362,56 @@ public class DeviceTwin
         // HttpResponse response = this.processHttpTwinRequest(url, HttpMethod.PUT, tags.getBytes(), String.valueOf(requestId++));
     }
 
+    public Query queryTwin(String sqlQuery, Integer pageSize) throws IotHubException, IOException
+    {
+        Query deviceTwinQuery = new Query(sqlQuery, pageSize, QueryType.TWIN);
+        deviceTwinQuery.sendQueryRequest(iotHubConnectionString, iotHubConnectionString.getUrlTwinQuery(), HttpMethod.POST, USE_DEFAULT_TIMEOUT);
+        return deviceTwinQuery;
+    }
+
+    public Query queryTwin(String sqlQuery) throws IotHubException, IOException
+    {
+        return this.queryTwin(sqlQuery, DEFAULT_PAGE_SIZE);
+    }
+
+    public boolean hasNextDeviceTwin(Query deviceTwinQuery) throws IotHubException, IOException
+    {
+        boolean isNextAvailable = deviceTwinQuery.hasNext();
+        if (!isNextAvailable && deviceTwinQuery.getContinuationToken() != null)
+        {
+            deviceTwinQuery.continueQuery(deviceTwinQuery.getContinuationToken());
+            deviceTwinQuery.sendQueryRequest(iotHubConnectionString, iotHubConnectionString.getUrlTwinQuery(), HttpMethod.POST, USE_DEFAULT_TIMEOUT);
+            return deviceTwinQuery.hasNext();
+        }
+        else
+        {
+            return isNextAvailable;
+        }
+    }
+
+    public DeviceTwinDevice getNextDeviceTwin(Query deviceTwinQuery) throws IOException, IotHubException
+    {
+        if (hasNextDeviceTwin(deviceTwinQuery))
+        {
+            Object nextObject = deviceTwinQuery.next();
+            if (nextObject instanceof TwinParser)
+            {
+                TwinParser twinParser = (TwinParser) nextObject;
+                DeviceTwinDevice deviceTwinDevice = new DeviceTwinDevice(twinParser.getDeviceId());
+                deviceTwinDevice.setTags(twinParser.getTagsMap());
+                deviceTwinDevice.setDesiredProperties(twinParser.getDesiredPropertyMap());
+                deviceTwinDevice.setReportedProperties(twinParser.getReportedPropertyMap());
+
+                return deviceTwinDevice;
+            }
+            else
+            {
+                throw new IOException("Received a response that does not match twin");
+            }
+        }
+        else
+        {
+            throw new NoSuchElementException();
+        }
+    }
 }

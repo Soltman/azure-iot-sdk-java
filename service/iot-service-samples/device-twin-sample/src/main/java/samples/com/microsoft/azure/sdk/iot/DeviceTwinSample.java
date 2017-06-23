@@ -6,6 +6,7 @@
 package samples.com.microsoft.azure.sdk.iot;
 
 import com.microsoft.azure.sdk.iot.service.devicetwin.DeviceTwin;
+import com.microsoft.azure.sdk.iot.service.devicetwin.Query;
 import com.microsoft.azure.sdk.iot.service.devicetwin.DeviceTwinDevice;
 import com.microsoft.azure.sdk.iot.service.devicetwin.Pair;
 import com.microsoft.azure.sdk.iot.service.exceptions.IotHubException;
@@ -20,8 +21,9 @@ import java.util.UUID;
 /** Manages device twin operations on IotHub */
 public class DeviceTwinSample
 {
-    private static final String iotHubConnectionString = "[Connection string goes here]";
-    private static final String deviceId = "[Device name goes here]";
+    private static final String iotHubConnectionString = "HostName=aziot-prmathur.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=m81kcZh4/3bjZyla+ChvFHxeezVgiyYK9iguWWAK7jg=";
+    private static final String deviceId = "prmathur-test";
+    private static String sqlQuery = "select * from devices";
 
     /**
      * @param args
@@ -59,8 +61,21 @@ public class DeviceTwinSample
             twinClient.getTwin(device);
             System.out.println(device);
 
+            //Query twin
+            System.out.println("Started Querying twin");
+
+            Query twinQuery = twinClient.queryTwin(sqlQuery, 3);
+            while (twinClient.hasNextDeviceTwin(twinQuery))
+            {
+                DeviceTwinDevice d = twinClient.getNextDeviceTwin(twinQuery);
+                System.out.println(d);
+            }
         }
         catch (IotHubException e)
+        {
+            System.out.println(e.getMessage());
+        }
+        catch (IOException e)
         {
             System.out.println(e.getMessage());
         }

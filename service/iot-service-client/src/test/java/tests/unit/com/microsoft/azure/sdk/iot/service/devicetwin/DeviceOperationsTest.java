@@ -15,6 +15,7 @@ import com.microsoft.azure.sdk.iot.service.transport.http.HttpRequest;
 import com.microsoft.azure.sdk.iot.service.transport.http.HttpResponse;
 import mockit.*;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -138,6 +139,7 @@ public class DeviceOperationsTest
     }
 
     /* Tests_SRS_DEVICE_OPERATIONS_21_005: [The request shall throw IllegalArgumentException if the provided `requestId` is null or empty.] */
+    @Ignore
     @Test (expected = IllegalArgumentException.class)
     public void request_nullRequestId_failed() throws Exception
     {
@@ -173,9 +175,8 @@ public class DeviceOperationsTest
         //assert
     }
 
-    
-
     /* Tests_SRS_DEVICE_OPERATIONS_21_005: [The request shall throw IllegalArgumentException if the provided `requestId` is null or empty.] */
+    @Ignore
     @Test (expected = IllegalArgumentException.class)
     public void request_emptyRequestId_failed() throws Exception
     {
